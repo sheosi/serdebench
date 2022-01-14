@@ -148,15 +148,25 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("de.msgpack", |b| {
         b.iter(|| rmp_serde::from_read_ref::<'_, _, StoredData>(black_box(&buffer)))
     });
-    group.bench_function("sr.cbor", |b| {
+    group.bench_function("sr.cbor.minicbor", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
             minicbor::encode(black_box(&value), black_box(&mut buffer))
         })
     });
-    println!("cbor: {} bytes", buffer.len());
-    group.bench_function("de.cbor", |b| {
+    println!("cbor.minicbor: {} bytes", buffer.len());
+    group.bench_function("de.cbor.minicbor", |b| {
         b.iter(|| minicbor::decode::<StoredData>(black_box(buffer.as_slice())))
+    });
+    group.bench_function("sr.cbor.ciborium", |b| {
+        b.iter(|| {
+            black_box(&mut buffer).clear();
+            ciborium::ser::into_writer(black_box(&value), black_box(&mut buffer))
+        })
+    });
+    println!("cbor.ciborium: {} bytes", buffer.len());
+    group.bench_function("de.cbor.ciborium", |b| {
+        b.iter(|| {ciborium::de::from_reader::<StoredData, _>(black_box(buffer.as_slice()))})
     });
     let mut bytes = [0u8; 512];
     group.bench_function("sr.postcard", |b| {
